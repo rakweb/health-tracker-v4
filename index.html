@@ -138,6 +138,16 @@
             <option value="off">Off</option>
           </select>
         </div>
+		
+<div>
+  <label>View</label>
+  <select id="viewMode" title="Choose which sections are visible">
+    <option value="both" selected>Both (Table + Chart)</option>
+    <option value="table">Table only</option>
+    <option value="chart">Chart only</option>
+  </select>
+</div>
+
       </div>
       <button class="btn" id="btnRefresh">Refresh</button>
       <div class="spacer"></div>
@@ -163,9 +173,8 @@
       <div class="chips" id="riskChips"></div>
     </div>
 
-    <!-- Chart + Table -->
-    <<!-- Entries (FULL WIDTH, ABOVE CHART) -->
-<div class="card full-width">
+    <!-- Entries (FULL WIDTH, ABOVE CHART) -->
+<div class="card full-width" id="entriesCard">
   <div class="section-title">
     <h2>Entries</h2>
     <div class="small">
@@ -177,6 +186,22 @@
       <thead id="tableHead"></thead>
       <tbody id="tableBody"></tbody>
     </table>
+  </div>
+</div>
+
+<!-- Metrics Chart (FULL WIDTH, BELOW ENTRIES) -->
+<div class="card full-width" id="chartCard">
+  <div class="section-title">
+    <h2>Metrics Chart</h2>
+    <div class="actions">
+      <button id="btnCollapseChart" class="btn" title="Collapse or expand chart area">
+        Collapse
+      </button>
+    </div>
+  </div>
+  <!-- Panel we hide/show when collapsing -->
+  <div id="chartPanel" style="height:320px">
+    <canvas id="metricsChart"></canvas>
   </div>
 </div>
 
@@ -573,7 +598,13 @@
     fieldsVisible: new Set(DEFAULT_FIELDS_VISIBLE),
     thresholds: JSON.parse(JSON.stringify(DEFAULT_THRESHOLDS)),
     options: {...OPTIONS},
-    ui: { chartEnabled: true },
+    
+    ui: {
+    chartEnabled: true,       // existing toggle
+    viewMode: 'both',         // 'both' | 'table' | 'chart'
+    collapsedChart: false     // true = hide chartPanel (header stays)
+  },
+
     editId: null,
     medsBuffer: [],
   };
@@ -867,6 +898,19 @@
       // Apply chart toggle in UI
       document.getElementById('toggleChart').value = State.ui.chartEnabled ? 'on' : 'off';
       document.getElementById('chartCard').style.display = State.ui.chartEnabled ? '' : 'none';
+	  
+	  // Load new UI prefs if present
+if (ui && typeof ui.viewMode === 'string') State.ui.viewMode = ui.viewMode;
+if (ui && typeof ui.collapsedChart === 'boolean') State.ui.collapsedChart = ui.collapsedChart;
+
+// Initialize controls to saved values
+const viewSel = document.getElementById('viewMode');
+if (viewSel) viewSel.value = State.ui.viewMode || 'both';
+
+// Apply view + collapse states to the DOM
+applyViewMode();
+setChartCollapsed(State.ui.collapsedChart);
+updateCollapseButton();
 
       State.entries=await DB.getAllEntries();
       UI.initChartMetricSelector();
@@ -1137,12 +1181,114 @@
 
   // Chart toggle (persist)
   document.getElementById('toggleChart').addEventListener('change', async (e)=>{
-    State.ui.chartEnabled = (e.target.value === 'on');
-    document.getElementById('chartCard').style.display = State.ui.chartEnabled ? '' : 'none';
-    if (!State.ui.chartEnabled && UI.chart) { UI.chart.destroy(); UI.chart = null; }
-    await DB.putConfig('ui', State.ui);
-    UI.refreshChart();
+  State.ui.chartEnabled = (e.target.value === 'on');
+
+  // If chart was turned off while in 'chart' view, fall back to 'table'
+  if (!State.ui.chartEnabled && State.ui.viewMode === 'chart') {
+    State.ui.viewMode = 'table';
+    const viewSel = document.getElementById('viewMode');
+    if (viewSel) viewSel.value = 'table';
+  }
+
+  // Apply visibility and cleanup
+  applyViewMode();
+
+  if (!State.ui.chartEnabled && UI.chart) {
+    UI.chart.destroy();
+    UI.chart = null;
+  }
+
+  await DB.putConfig('ui', State.ui);
+  UI.refreshChart();
+});
+``
+  
+  /* ==================== View mode + chart collapse ==================== */
+
+// Persist helper
+async function saveUI() {
+  await DB.putConfig('ui', State.ui);
+}
+
+// Show/hide entries & chart cards based on viewMode + chartEnabled
+function applyViewMode() {
+  const entriesCard = document.getElementById('entriesCard');
+  const chartCard   = document.getElementById('chartCard');
+
+  const vm   = State.ui.viewMode || 'both';
+  const showChart = State.ui.chartEnabled === true;
+
+  // Decide visibility
+  const showEntriesByVM = (vm === 'both' || vm === 'table');
+  const showChartByVM   = (vm === 'both' || vm === 'chart');
+
+  if (entriesCard) entriesCard.style.display = showEntriesByVM ? '' : 'none';
+  if (chartCard)   chartCard.style.display   = (showChartByVM && showChart) ? '' : 'none';
+
+  // If user asked "chart only" but chart was disabled, auto-enable it
+  if (vm === 'chart' && !showChart) {
+    State.ui.chartEnabled = true;
+    const toggle = document.getElementById('toggleChart');
+    if (toggle) toggle.value = 'on';
+    if (chartCard) chartCard.style.display = '';
+    saveUI();
+  }
+
+  // If chart panel is visible and chart is enabled, re-render to ensure sizing is correct
+  if ((vm === 'both' || vm === 'chart') && State.ui.chartEnabled) {
+    // defer refresh slightly to let layout settle
+    setTimeout(() => UI.refreshChart?.(), 0);
+  }
+}
+
+// Collapse / expand: hide the chart panel; header remains
+function setChartCollapsed(collapsed) {
+  const panel = document.getElementById('chartPanel');
+  if (!panel) return;
+  panel.style.display = collapsed ? 'none' : '';
+}
+
+function updateCollapseButton() {
+  const btn = document.getElementById('btnCollapseChart');
+  if (!btn) return;
+  btn.textContent = State.ui.collapsedChart ? 'Expand' : 'Collapse';
+  btn.title = State.ui.collapsedChart ? 'Expand chart area' : 'Collapse chart area';
+}
+
+// Wire: collapse button
+const btnCollapse = document.getElementById('btnCollapseChart');
+if (btnCollapse) {
+  btnCollapse.addEventListener('click', async () => {
+    State.ui.collapsedChart = !State.ui.collapsedChart;
+    setChartCollapsed(State.ui.collapsedChart);
+    updateCollapseButton();
+    await saveUI();
+    // When expanding, ensure chart resizes correctly
+    if (!State.ui.collapsedChart && State.ui.chartEnabled) {
+      setTimeout(() => UI.refreshChart?.(), 0);
+    }
   });
+}
+
+// Wire: view mode select
+const viewSel = document.getElementById('viewMode');
+if (viewSel) {
+  viewSel.addEventListener('change', async (e) => {
+    const val = e.target.value || 'both';
+    State.ui.viewMode = (val === 'table' || val === 'chart') ? val : 'both';
+
+    // If user selects "chart", ensure chart is enabled
+    if (State.ui.viewMode === 'chart' && !State.ui.chartEnabled) {
+      State.ui.chartEnabled = true;
+      const toggle = document.getElementById('toggleChart');
+      if (toggle) toggle.value = 'on';
+    }
+
+    applyViewMode();
+    await saveUI();
+  });
+}
+``
 
   // Close modals by clicking backdrop
   for(const id of ['entryModal','fieldsModal','thModal','optModal']){

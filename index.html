@@ -86,6 +86,13 @@
     .toast.show{ display:flex; }
 
     .small{ font-size:12px; color:var(--muted); }
+	
+    /* Full-width sections (Entries + Chart stacked vertically) */
+    .full-width {
+    width: 100%;
+    margin-top: 12px;
+    }
+
   </style>
 </head>
 <body>
@@ -157,24 +164,31 @@
     </div>
 
     <!-- Chart + Table -->
-    <div class="grid">
-      <div class="card" id="chartCard">
-        <div class="section-title"><h2>Metrics Chart</h2></div>
-        <div style="height:260px"><canvas id="metricsChart"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="section-title">
-          <h2>Entries</h2>
-          <div class="small">Modify or delete entries. Exports respect date range and selected fields.</div>
-        </div>
-        <div style="overflow:auto;">
-          <table id="entriesTable">
-            <thead id="tableHead"></thead>
-            <tbody id="tableBody"></tbody>
-          </table>
-        </div>
-      </div>
+    <<!-- Entries (FULL WIDTH, ABOVE CHART) -->
+<div class="card full-width">
+  <div class="section-title">
+    <h2>Entries</h2>
+    <div class="small">
+      Modify or delete entries. Exports respect date range and selected fields.
     </div>
+  </div>
+  <div style="overflow:auto;">
+    <table id="entriesTable">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Metrics Chart (FULL WIDTH, BELOW ENTRIES) -->
+<div class="card full-width" id="chartCard">
+  <div class="section-title">
+    <h2>Metrics Chart</h2>
+  </div>
+  <div style="height:320px">
+    <canvas id="metricsChart"></canvas>
+  </div>
+</div>
   </main>
 
   <!-- Update toast -->

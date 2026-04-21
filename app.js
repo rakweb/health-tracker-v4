@@ -156,6 +156,15 @@
     }
   };
 
+   // Add inside UI.init()
+const chartSelect = document.getElementById("chartMetrics");
+if (chartSelect) {
+  chartSelect.addEventListener("change", () => {
+    const metric = chartSelect.value;
+    Charts.setMetric(metric);
+  });
+}
+
   /* =====================================================
      CHARTS (Chart.js isolated)
      ===================================================== */
@@ -209,6 +218,14 @@ const Thresholds = {
       ]
     }
   },
+
+   Thresholds.definitions.sys = {
+  bands: [
+    { min: 0,   max: 120, level: "ok",     label: "Normal" },
+    { min: 120, max: 130, level: "warn",   label: "Elevated" },
+    { min: 130, max: 300, level: "danger", label: "High" }
+  ]
+};
 
   /**
    * Return annotation config for Chart.js

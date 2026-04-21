@@ -1,48 +1,45 @@
 /* =========================================================
-   Health Tracker App – app.js
-   Architecture-first, PWA-safe, migration-ready
+   Health Tracker – app.js (Refactored, Stable, PWA‑ready)
+   HTML remains unchanged
    ========================================================= */
-
 (() => {
   "use strict";
 
-  /* =========================================================
-     APP BOOTSTRAP
-     ========================================================= */
-  const App = {
-    async init() {
-      try {
-        DB.init();
-        Accessibility.init();
-        Updates.init();
-        PWA.init();
+  document.addEventListener("DOMContentLoaded", init);
 
-        // Hook UI events last (after DOM + DB exist)
-        UI.init();
+  function init() {
+    DB.init();
+    State.init();
+    Accessibility.init();
+    PWA.init();
+    Updates.init();
 
-        console.info("[App] Initialized successfully");
-      } catch (err) {
-        console.error("[App] Initialization failed", err);
-      }
-    }
-  };
+    UI.init();
+    Charts.init();
+    Thresholds.init();
+    Fields.init();
 
-  document.addEventListener("DOMContentLoaded", App.init);
+    UI.refresh();
+    console.info("[App] Initialized successfully");
+  }
 
-  /* =========================================================
-     STATE (in-memory only; persisted via DB)
-     ========================================================= */
+  /* =====================================================
+     STATE
+     ===================================================== */
   const State = {
     entries: [],
-    filters: {
-      from: null,
-      to: null
+    selectedFields: [],
+    thresholds: {},
+    options: {},
+
+    init() {
+      // hydrated later
     }
   };
 
-  /* =========================================================
-     DATABASE – IndexedDB with migrations
-     ========================================================= */
+  /* =====================================================
+     DATABASE (IndexedDB + migrations)
+     ===================================================== */
   const DB = {
     NAME: "healthDB",
     VERSION: 2,
@@ -51,39 +48,283 @@
     init() {
       const open = indexedDB.open(this.NAME, this.VERSION);
 
-      open.onupgradeneeded = (event) => {
-        const db = event.target.result;
-        const oldVersion = event.oldVersion;
+      open.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        const old = e.oldVersion;
 
-        console.info("[DB] Upgrade needed from", oldVersion);
-
-        // v1 – base store
-        if (oldVersion < 1) {
+        if (old < 1) {
           db.createObjectStore("entries", { keyPath: "id" });
         }
-
-        // v2 – indexes
-        if (oldVersion < 2) {
-          const store = event.target.transaction.objectStore("entries");
+        if (old < 2) {
+          const store = e.target.transaction.objectStore("entries");
           store.createIndex("byDate", "date");
         }
       };
 
-      open.onsuccess = () => {
-        this.db = open.result;
-        console.info("[DB] Ready (v" + this.VERSION + ")");
-      };
-
-      open.onerror = () => {
-        console.error("[DB] Failed to open database");
-      };
+      open.onsuccess = () => (this.db = open.result);
     },
 
-    tx(storeName, mode = "readonly") {
-      return this.db
-        .transaction(storeName, mode)
-        .objectStore(storeName);
+    store(mode = "readonly") {
+      return this.db.transaction("entries", mode).objectStore("entries");
     },
 
-    async getAllEntries() {
-      return new Promise((resolve, reject) => {
+    getAll() {
+      return new Promise((res, rej) => {
+        const r = this.store().getAll();
+        r.onsuccess = () => res(r.result || []);
+        r.onerror = () => rej(r.error);
+      });
+    },
+
+    save(entry) {
+      return new Promise((res, rej) => {
+        const r = this.store("readwrite").put(entry);
+        r.onsuccess = res;
+        r.onerror = () => rej(r.error);
+      });
+    },
+
+    remove(id) {
+      return new Promise((res, rej) => {
+        const r = this.store("readwrite").delete(id);
+        r.onsuccess = res;
+        r.onerror = () => rej(r.error);
+      });
+    }
+  };
+
+  /* =====================================================
+     UI + CRUD
+     ===================================================== */
+  const UI = {
+    init() {
+      bind("btnAdd", this.openEntryModal);
+      bind("btnRefresh", this.refresh);
+      bind("btnSaveEntry", this.saveEntry);
+      bind("btnSaveCSV", ExportCSV.run);
+      bind("btnSavePDF", ExportPDF.run);
+    },
+
+    async refresh() {
+      State.entries = await DB.getAll();
+      this.renderTable();
+      Charts.update(State.entries);
+    },
+
+    renderTable() {
+      const body = document.getElementById("tableBody");
+      if (!body) return;
+      body.innerHTML = "";
+
+      State.entries.forEach(e => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${e.date || ""}</td>
+          <td>${e.glucose ?? ""}</td>
+          <td>
+            <button class="btn danger">Delete</button>
+          </td>`;
+        tr.querySelector("button").onclick = () =>
+          this.deleteEntry(e.id);
+        body.appendChild(tr);
+      });
+    },
+
+    async saveEntry() {
+      const entry = {
+        id: crypto.randomUUID(),
+        date: f_date.value,
+        glucose: +f_glucose.value || null
+      };
+      await DB.save(entry);
+      this.closeEntryModal();
+      this.refresh();
+    },
+
+    async deleteEntry(id) {
+      await DB.remove(id);
+      this.refresh();
+    },
+
+    openEntryModal() {
+      entryModal.classList.add("show");
+      Accessibility.focusFirst(entryModal);
+    },
+
+    closeEntryModal() {
+      entryModal.classList.remove("show");
+    }
+  };
+
+  /* =====================================================
+     CHARTS (Chart.js isolated)
+     ===================================================== */
+  const Charts = {
+    chart: null,
+
+    init() {
+      const ctx = document.getElementById("metricsChart");
+      if (!ctx) return;
+
+      this.chart = new Chart(ctx, {
+        type: "line",
+        data: { labels: [], datasets: [] },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: true } },
+          scales: { x: { type: "time", time: { unit: "day" } } }
+        }
+      });
+    },
+
+    update(entries) {
+      if (!this.chart) return;
+
+      this.chart.data.labels = entries.map(e => e.date);
+      this.chart.data.datasets = [{
+        label: "Glucose",
+        data: entries.map(e => e.glucose ?? null),
+        borderColor: "#4ba3ff",
+        tension: 0.3
+      }];
+      this.chart.update();
+    }
+  };
+
+  /* =====================================================
+     THRESHOLDS
+     ===================================================== */
+  const Thresholds = {
+    init() {
+      // wire thresholds modal later
+    },
+
+    evaluate(entry) {
+      // placeholder
+      return null;
+    }
+  };
+
+  /* =====================================================
+     FIELDS SELECTION
+     ===================================================== */
+  const Fields = {
+    init() {
+      bind("btnFields", this.open);
+    },
+
+    open() {
+      fieldsModal.classList.add("show");
+      Accessibility.focusFirst(fieldsModal);
+    },
+
+    close() {
+      fieldsModal.classList.remove("show");
+    }
+  };
+
+  /* =====================================================
+     EXPORT – CSV
+     ===================================================== */
+  const ExportCSV = {
+    run() {
+      if (!State.entries.length) return;
+      const rows = ["date,glucose"];
+      State.entries.forEach(e =>
+        rows.push(`${e.date},${e.glucose ?? ""}`)
+      );
+      download("health.csv", rows.join("\n"));
+    }
+  };
+
+  /* =====================================================
+     EXPORT – PDF
+     ===================================================== */
+  const ExportPDF = {
+    run() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Health Tracker", 10, 10);
+      doc.save("health.pdf");
+    }
+  };
+
+  /* =====================================================
+     ACCESSIBILITY (WCAG AA focus traps)
+     ===================================================== */
+  const Accessibility = {
+    init() {
+      document.querySelectorAll(".modal-backdrop")
+        .forEach(m => this.trap(m));
+    },
+
+    trap(container) {
+      container.addEventListener("keydown", e => {
+        if (e.key !== "Tab") return;
+        const f = container.querySelectorAll(
+          "button,input,select,textarea"
+        );
+        if (!f.length) return;
+        if (e.shiftKey && document.activeElement === f[0]) {
+          e.preventDefault();
+          f[f.length - 1].focus();
+        }
+        if (!e.shiftKey &&
+            document.activeElement === f[f.length - 1]) {
+          e.preventDefault();
+          f[0].focus();
+        }
+      });
+    },
+
+    focusFirst(container) {
+      container.querySelector("button,input,select,textarea")?.focus();
+    }
+  };
+
+  /* =====================================================
+     UPDATES (version.json)
+     ===================================================== */
+  const Updates = {
+    CURRENT: "1.5.0",
+    async init() {
+      try {
+        const r = await fetch("/version.json", { cache: "no-store" });
+        const { version } = await r.json();
+        if (version !== this.CURRENT) {
+          updateToast.classList.add("show");
+        }
+      } catch {}
+    }
+  };
+
+  /* =====================================================
+     PWA – service worker updates
+     ===================================================== */
+  const PWA = {
+    init() {
+      navigator.serviceWorker?.addEventListener(
+        "controllerchange",
+        () => location.reload()
+      );
+    }
+  };
+
+  /* =====================================================
+     HELPERS
+     ===================================================== */
+  function bind(id, fn) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", fn.bind(UI));
+  }
+
+  function download(name, text) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(
+      new Blob([text], { type: "text/plain" })
+    );
+    a.download = name;
+    a.click();
+  }
+
+})();

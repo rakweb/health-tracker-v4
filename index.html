@@ -6,19 +6,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b1220" />
 
+  <!-- PWA -->
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon-192.png" sizes="192x192" />
   <link rel="apple-touch-icon" href="./icons/icon-192.png" />
 
   <link rel="stylesheet" href="./range-slider.css" />
 
+  <!-- Libraries -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.1.0/dist/chartjs-plugin-annotation.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
 
 <style>
   :root {
-    /* Dark Theme (default) */
     --bg: #0b1220;
     --panel: #121a2a;
     --muted: #8aa0c3;
@@ -32,12 +33,10 @@
     --btn: #1a2842;
     --btn-hover: #223152;
     --card: #0e1628;
-    --success: #27d79b;
     --border: #1f2a45;
   }
 
   [data-theme="light"] {
-    /* Complete Light Theme */
     --bg: #f8f9fc;
     --panel: #ffffff;
     --muted: #555a6e;
@@ -51,7 +50,6 @@
     --btn: #f0f2fa;
     --btn-hover: #e0e4f0;
     --card: #ffffff;
-    --success: #2e7d32;
     --border: #d0d7e8;
   }
 
@@ -61,66 +59,160 @@
     font-family: Inter, system-ui, Segoe UI, Roboto, Arial, sans-serif;
     background: linear-gradient(180deg, #0a1120 0%, #0b1220 60%, #0d1322 100%);
     color: var(--text);
-    transition: background 0.3s, color 0.3s;
+    transition: background 0.4s ease, color 0.3s;
   }
   [data-theme="light"] body {
     background: linear-gradient(180deg, #f0f2fa 0%, #f8f9fc 60%, #e8ecf8 100%);
   }
 
-  /* Rest of your original styles (toolbar, cards, kpis, modals, etc.) – kept intact but with var() usage */
-  .card { background: var(--card); border: 1px solid var(--ring); }
-  .btn { background: var(--btn); border: 1px solid var(--ring); color: var(--text); }
-  .btn:hover { background: var(--btn-hover); }
-  input, select, textarea {
-    background: var(--panel);
-    color: var(--text);
-    border: 1px solid var(--border);
+  /* Subtle visualization pattern */
+  .pattern-bg {
+    background-image: 
+      linear-gradient(rgba(75,163,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(75,163,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 
-  /* Accessibility enhancements */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--ring);
+    border-radius: 14px;
+    padding: 14px;
+    box-shadow: 0 4px 25px rgba(0,0,0,0.35);
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    opacity: 0.02;
+    pointer-events: none;
+  }
+
+  .kpi, .chip { transition: all 0.2s ease; }
+
+  /* Accessibility & Focus */
+  :focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
   button, input, select { min-height: 44px; }
-  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
-  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--btn);
+    border: 1px solid var(--ring);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 15px;
+  }
 </style>
 </head>
-<body data-theme="dark">
+
+<body data-theme="dark" class="pattern-bg">
 
 <header>
   <div class="wrap headbar">
     <div>
-      <h1>Health Tracker <span id="versionBadge" class="small">v4.3</span></h1>
+      <h1>Health Tracker <span id="versionBadge" class="small" style="opacity:0.75;font-size:13px;">v4.3</span></h1>
     </div>
-    <div class="install toolbar">
-      <button id="btnInstall" class="btn" aria-label="Install as PWA" style="display:none">Install</button>
-      <button id="btnCheckUpdates" class="btn" aria-label="Check for app updates">Check Updates</button>
-      <button id="themeToggle" class="btn" aria-label="Toggle dark/light theme" title="Toggle theme">🌙</button>
+    <div class="install toolbar" style="gap:8px;">
+      <button id="btnInstall" class="btn" style="display:none" aria-label="Install Health Tracker as app">Install</button>
+      <button id="btnCheckUpdates" class="btn" aria-label="Check for updates">Check Updates</button>
+      <button id="themeToggle" class="theme-toggle" aria-label="Toggle light/dark theme" title="Toggle theme">🌙</button>
     </div>
   </div>
 </header>
 
 <main class="wrap">
-  <!-- Your existing toolbar, KPIs, Risk Alerts, Entries Table, Chart – unchanged except added ARIA -->
+  <!-- Toolbar -->
   <div class="toolbar card" role="toolbar" aria-label="Main controls">
-    <!-- ... your row buttons ... -->
+    <div class="row">
+      <div><label for="filterStart">From Date</label><input type="date" id="filterStart" aria-label="Filter start date"></div>
+      <div><label for="filterEnd">To Date</label><input type="date" id="filterEnd" aria-label="Filter end date"></div>
+      <div>
+        <label for="chartMetrics">Chart Metrics</label>
+        <select id="chartMetrics" multiple size="4" aria-label="Select metrics to display on chart"></select>
+        <div class="small">Hold Ctrl/Cmd for multi-select</div>
+      </div>
+      <div>
+        <label for="axisMode">Axis Mode</label>
+        <select id="axisMode" aria-label="Y-axis mode">
+          <option value="single">Single Y-axis</option>
+          <option value="perMetric" selected>Per-metric axes</option>
+        </select>
+      </div>
+      <div>
+        <label for="toggleChart">Show Chart</label>
+        <select id="toggleChart" aria-label="Toggle chart visibility">
+          <option value="on" selected>On</option>
+          <option value="off">Off</option>
+        </select>
+      </div>
+      <div>
+        <label for="viewMode">View</label>
+        <select id="viewMode" aria-label="Choose visible sections">
+          <option value="both" selected>Both (Table + Chart)</option>
+          <option value="table">Table only</option>
+          <option value="chart">Chart only</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <button class="btn" id="btnRefresh" aria-label="Refresh all data">Refresh</button>
+      <button class="btn" id="btnFields" aria-label="Select visible fields">Select Fields</button>
+      <button class="btn" id="btnThresholds" aria-label="Edit thresholds">Thresholds</button>
+      <button class="btn" id="btnSaveCSV" aria-label="Export as CSV">Save CSV</button>
+      <button class="btn" id="btnSavePDF" aria-label="Export as PDF">Save PDF</button>
+      <button class="btn" id="btnImportCSV" aria-label="Import CSV file">Import CSV</button>
+      <button class="btn ok" id="btnAdd" aria-label="Add new health entry">Add Entry</button>
+      <button class="btn warn" id="btnOptions" aria-label="Open settings">Options</button>
+    </div>
   </div>
 
-  <!-- KPIs with better labels -->
-  <div class="kpis" role="region" aria-label="Key health indicators"></div>
+  <!-- KPIs -->
+  <div class="kpis" role="region" aria-label="Key Performance Indicators">
+    <div class="kpi"><div class="label">Latest Glucose</div><div class="value" id="kpiGlucose">—</div><div class="trend" id="kpiGlucoseTrend"></div></div>
+    <div class="kpi"><div class="label">Latest BP (Sys/Dia)</div><div class="value" id="kpiBP">—</div><div class="trend" id="kpiBPTrend"></div></div>
+    <div class="kpi"><div class="label">Latest BMI / WHtR</div><div class="value"><span id="kpiBMI">—</span> / <span id="kpiWHtR">—</span></div><div class="trend" id="kpiBMITrend"></div></div>
+    <div class="kpi"><div class="label">Latest SpO₂ / HR</div><div class="value"><span id="kpiSpO2">—</span> / <span id="kpiHR">—</span></div><div class="trend" id="kpiVitalsTrend"></div></div>
+  </div>
 
-  <!-- Entries -->
+  <!-- Risk Alerts -->
+  <div class="card" role="region" aria-label="Risk alerts">
+    <div class="section-title"><h2>Risk Alerts</h2></div>
+    <div class="chips" id="riskChips" aria-live="polite"></div>
+  </div>
+
+  <!-- Entries Table -->
   <div class="card full-width" id="entriesCard" role="region" aria-labelledby="entriesTitle">
-    <h2 id="entriesTitle">Entries</h2>
-    <table id="entriesTable" aria-label="Health entries log"></table>
+    <div class="section-title">
+      <h2 id="entriesTitle">Entries</h2>
+      <div class="small">Click Edit or Delete • Exports respect filters &amp; selected fields</div>
+    </div>
+    <div style="overflow:auto;">
+      <table id="entriesTable" aria-label="Health data entries table"></table>
+    </div>
   </div>
 
   <!-- Chart -->
   <div class="card full-width" id="chartCard" role="region" aria-labelledby="chartTitle">
-    <h2 id="chartTitle">Metrics Chart</h2>
-    <canvas id="metricsChart" aria-label="Health metrics line chart" role="img"></canvas>
+    <div class="section-title">
+      <h2 id="chartTitle">Metrics Chart</h2>
+      <button id="btnCollapseChart" class="btn" aria-label="Collapse or expand chart">Collapse</button>
+    </div>
+    <div id="chartPanel" style="height:340px">
+      <canvas id="metricsChart" role="img" aria-label="Interactive health metrics chart"></canvas>
+    </div>
   </div>
 </main>
-
-<!-- All your modals remain the same but with added ARIA where needed -->
 
 <!-- Update Toast -->
 <div id="updateToast" class="toast" role="alert" aria-live="polite">
@@ -128,6 +220,9 @@
   <button id="btnReloadNow" class="btn ok">Reload Now</button>
   <button id="btnDismissToast" class="btn">Later</button>
 </div>
+
+<!-- All your existing modals (entryModal, fieldsModal, thModal, optModal, bulkRemoveModal) remain unchanged -->
+<!-- Paste them here from your previous version -->
 
 <script src="./range-slider.js"></script>
 <script src="./app.js" defer></script>

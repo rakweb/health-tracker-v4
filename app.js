@@ -192,19 +192,62 @@
   };
 
   /* =====================================================
-     THRESHOLDS
-     ===================================================== */
-  const Thresholds = {
-    init() {
-      // wire thresholds modal later
-    },
-
-    evaluate(entry) {
-      // placeholder
-      return null;
+   THRESHOLDS (definition + evaluation)
+   ===================================================== */
+const Thresholds = {
+  /**
+   * Canonical threshold definitions
+   * Units MUST match stored values
+   */
+  definitions: {
+    glucose: {
+      bands: [
+        { min: 0,   max: 70,  level: "danger", label: "Low" },
+        { min: 70,  max: 100, level: "ok",     label: "Normal" },
+        { min: 100, max: 125, level: "warn",   label: "Elevated" },
+        { min: 125, max: 300, level: "danger", label: "High" }
+      ]
     }
-  };
+  },
 
+  /**
+   * Return annotation config for Chart.js
+   */
+  getChartAnnotations(metric) {
+    const def = this.definitions[metric];
+    if (!def?.bands) return {};
+
+    const annotations = {};
+
+    def.bands.forEach((band, i) => {
+      annotations[`band_${metric}_${i}`] = {
+        type: "box",
+        yMin: band.min,
+        yMax: band.max,
+        backgroundColor: this.colorForLevel(band.level, 0.12),
+        borderWidth: 0,
+        label: {
+          display: true,
+          content: band.label,
+          position: "start",
+          color: "#cfd8ff",
+          font: { size: 11 }
+        }
+      };
+    });
+
+    return annotations;
+  },
+
+  colorForLevel(level, alpha = 0.1) {
+    switch (level) {
+      case "ok":     return `rgba(39, 215, 155, ${alpha})`;
+      case "warn":   return `rgba(255, 204, 102, ${alpha})`;
+      case "danger": return `rgba(255, 92, 92, ${alpha})`;
+      default:       return `rgba(120, 120, 120, ${alpha})`;
+    }
+  }
+};
   /* =====================================================
      FIELDS SELECTION
      ===================================================== */

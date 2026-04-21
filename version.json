@@ -1,0 +1,8 @@
+{
+  "version": "4.3.0",
+  "date": "2026-04-21",
+  "name": "Health Tracker",
+  "changelog": "• Full light/dark theme support\n• Automatic update checking\n• Accessibility improvements (ARIA, keyboard nav, contrast)\n• Better mobile experience",
+  "critical": false,
+  "downloadUrl": "https://yourdomain.com/health-tracker-v4.3.zip"
+}

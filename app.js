@@ -1,106 +1,89 @@
-// app.js
+/* =========================================================
+   Health Tracker App – app.js
+   Architecture-first, PWA-safe, migration-ready
+   ========================================================= */
+
 (() => {
+  "use strict";
+
+  /* =========================================================
+     APP BOOTSTRAP
+     ========================================================= */
   const App = {
-    init() {
-      DB.init();
-      State.load();
-      UI.init();
-      Charts.init();
-      Updates.init();
-      Accessibility.init();
+    async init() {
+      try {
+        DB.init();
+        Accessibility.init();
+        Updates.init();
+        PWA.init();
+
+        // Hook UI events last (after DOM + DB exist)
+        UI.init();
+
+        console.info("[App] Initialized successfully");
+      } catch (err) {
+        console.error("[App] Initialization failed", err);
+      }
     }
   };
 
   document.addEventListener("DOMContentLoaded", App.init);
 
-  /* ================= STATE ================= */
-  const State = { /* filters, selections */ };
+  /* =========================================================
+     STATE (in-memory only; persisted via DB)
+     ========================================================= */
+  const State = {
+    entries: [],
+    filters: {
+      from: null,
+      to: null
+    }
+  };
 
- /* ================== DATABASE (IndexedDB) =================*/
-const DB = {
-  NAME: "healthDB",
-  VERSION: 2,
-  db: null,
+  /* =========================================================
+     DATABASE – IndexedDB with migrations
+     ========================================================= */
+  const DB = {
+    NAME: "healthDB",
+    VERSION: 2,
+    db: null,
 
-  init() {
-    const open = indexedDB.open(this.NAME, this.VERSION);
+    init() {
+      const open = indexedDB.open(this.NAME, this.VERSION);
 
-    open.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      const oldVersion = e.oldVersion;
+      open.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        const oldVersion = event.oldVersion;
 
-      if (oldVersion < 1) {
-        db.createObjectStore("entries", { keyPath: "id" });
-      }
+        console.info("[DB] Upgrade needed from", oldVersion);
 
-      if (oldVersion < 2) {
-        const store = e.target.transaction.objectStore("entries");
-        store.createIndex("byDate", "date");
-      }
-    };
+        // v1 – base store
+        if (oldVersion < 1) {
+          db.createObjectStore("entries", { keyPath: "id" });
+        }
 
-    open.onsuccess = () => {
-      this.db = open.result;
-    };
-  }
-};
+        // v2 – indexes
+        if (oldVersion < 2) {
+          const store = event.target.transaction.objectStore("entries");
+          store.createIndex("byDate", "date");
+        }
+      };
 
-  /* ================= UI ================= */
-  const UI = { /* DOM reads/writes only */ };
+      open.onsuccess = () => {
+        this.db = open.result;
+        console.info("[DB] Ready (v" + this.VERSION + ")");
+      };
 
-  /* ================= CHARTS ================= */
-  const Charts = { /* Chart.js only */ };
+      open.onerror = () => {
+        console.error("[DB] Failed to open database");
+      };
+    },
 
-  /* ================= UPDATES ================= */
-  const Updates = { /* version check */ };
-  const Updates = {
-  CURRENT: "1.5.0",
+    tx(storeName, mode = "readonly") {
+      return this.db
+        .transaction(storeName, mode)
+        .objectStore(storeName);
+    },
 
-  async init() {
-    try {
-      const res = await fetch('/version.json', { cache: 'no-store' });
-      const { version } = await res.json();
-      if (version !== this.CURRENT) {
-        document.getElementById('updateToast').classList.add('show');
-      }
-    } catch {}
-  }
-};
-
-  /* ================= ACCESSIBILITY ================= */
-  const Accessibility = { /* focus traps */ };
-  const Accessibility = {
-  init() {
-    document.querySelectorAll(".modal-backdrop").forEach(m =>
-      this.trapFocus(m)
-    );
-  },
-
-  trapFocus(container) {
-    const focusable = container.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-
-    let first = focusable[0];
-    let last = focusable[focusable.length - 1];
-
-    container.addEventListener("keydown", e => {
-      if (e.key !== "Tab") return;
-
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    });
-  }
-};
-  
-  /* ================= APP-SIDE LISTENER ============= */
-  navigator.serviceWorker?.addEventListener('controllerchange', () => {
-  window.location.reload();
-});
-})();
-``
+    async getAllEntries() {
+      return new Promise((resolve, reject) => {

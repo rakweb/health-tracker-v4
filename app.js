@@ -165,6 +165,15 @@ if (chartSelect) {
   });
 }
 
+   // Add inside UI.init()
+const chartSelect = document.getElementById("chartMetrics");
+if (chartSelect) {
+  chartSelect.addEventListener("change", () => {
+    const metric = chartSelect.value;
+    Charts.setMetric(metric);
+  });
+}
+
   /* =====================================================
      CHARTS (Chart.js isolated)
      ===================================================== */

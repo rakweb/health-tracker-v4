@@ -2,7 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
-  <title>Health Tracker v4</title>
+  <title>Health Tracker</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b1220" />
 
@@ -96,12 +96,6 @@ input[type="date"] {
 <body>
   <h1>Health Tracker v4</h1>
 
-  <div>
-    <button id="btnTheme">Toggle Theme</button>
-    <button id="btnAdd">Add Entry</button>
-    <button id="btnRefresh">Refresh</button>
-  </div>
-  
   <div class="card" id="topControls">
 
   <!-- Row 1: Filters & View Controls -->
@@ -151,6 +145,7 @@ input[type="date"] {
 
   <!-- Row 2: Data Actions -->
   <div class="card-row center">
+    <button id="btnAdd">Add Entry</button>
     <button id="btnRefresh">Refresh</button>
     <button id="btnFields">Select Fields</button>
     <button id="btnThresholds">Thresholds</button>
@@ -162,7 +157,7 @@ input[type="date"] {
 
   <!-- Row 3: Primary Actions -->
   <div class="card-row center">
-    <button id="btnAdd">Add Entry</button>
+    
     <button id="btnOptions">Options</button>
     <button id="btnTheme">Toggle Theme</button>
   </div>

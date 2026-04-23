@@ -1,22 +1,27 @@
+// =====================================================
+// Health Tracker — Working Baseline
+// =====================================================
 (() => {
   let entries = [];
-  let chart;
+  let chart = null;
 
   document.addEventListener("DOMContentLoaded", init);
 
   function init() {
-    btnTheme.onclick = toggleTheme;
-    btnAdd.onclick = addEntry;
-    btnRefresh.onclick = refreshUI;
+    console.log("✅ app.js loaded");
+
+    btnTheme.addEventListener("click", toggleTheme);
+    btnAdd.addEventListener("click", addEntry);
+    btnRefresh.addEventListener("click", refreshUI);
 
     restoreTheme();
     initChart();
     refreshUI();
-
-    console.log("✅ App initialized");
   }
 
-  /* ---------------- THEME ---------------- */
+  // -------------------------
+  // Theme
+  // -------------------------
   function restoreTheme() {
     const saved = localStorage.getItem("theme") || "dark";
     document.documentElement.dataset.theme = saved;
@@ -24,12 +29,14 @@
 
   function toggleTheme() {
     const current = document.documentElement.dataset.theme;
-    const next = current === "light" ? "dark" : "light";
+    const next = current === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
     localStorage.setItem("theme", next);
   }
 
-  /* ---------------- CRUD ---------------- */
+  // -------------------------
+  // CRUD (in memory baseline)
+  // -------------------------
   function addEntry() {
     entries.push({
       date: new Date().toISOString().slice(0, 10),
@@ -52,7 +59,9 @@
     });
   }
 
-  /* ---------------- CHART ---------------- */
+  // -------------------------
+  // Chart
+  // -------------------------
   function initChart() {
     chart = new Chart(metricsChart, {
       type: "line",

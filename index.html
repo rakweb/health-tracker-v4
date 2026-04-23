@@ -2,7 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
-  <title>Health Tracker</title>
+  <title>Health Tracker v4</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b1220" />
 
@@ -49,6 +49,47 @@
       padding:6px;
       text-align:left;
     }
+	/* ================= TOP CONTROL CARD ================= */
+
+.card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid #2a3a58;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.card-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.card-row:last-child {
+  margin-bottom: 0;
+}
+
+.card-row.center {
+  justify-content: center;
+}
+
+.card-row > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+}
+
+label {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-bottom: 4px;
+}
+
+select,
+input[type="date"] {
+  padding: 6px 8px;
+}
   </style>
 </head>
 

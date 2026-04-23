@@ -1,21 +1,48 @@
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("Chart =", window.Chart);
+  let entries = [];
+  let chart;
 
-  if (!window.Chart) {
-    alert("❌ Chart.js not loaded");
-    return;
+  btnAdd.onclick = () => {
+    entries.push({
+      date: new Date().toISOString().slice(0, 10),
+      glucose: Math.floor(70 + Math.random() * 80)
+    });
+    render();
+  };
+
+  btnRefresh.onclick = render;
+  btnTheme.onclick = toggleTheme;
+
+  initChart();
+  render();
+
+  function render() {
+    tableBody.innerHTML = "";
+    entries.forEach(e => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${e.date}</td><td>${e.glucose}</td>`;
+      tableBody.appendChild(tr);
+    });
+
+    chart.data.labels = entries.map(e => e.date);
+    chart.data.datasets[0].data = entries.map(e => e.glucose);
+    chart.update();
   }
 
-  new Chart(document.getElementById("metricsChart"), {
-    type: "line",
-    data: {
-      labels: ["A", "B", "C"],
-      datasets: [{
-        label: "Test",
-        data: [1, 2, 3]
-      }]
-    }
-  });
+  function initChart() {
+    chart = new Chart(metricsChart, {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [{ label: "Glucose", data: [] }]
+      }
+    });
+  }
 
-  alert("✅ Chart rendered");
+  function toggleTheme() {
+    document.documentElement.dataset.theme =
+      document.documentElement.dataset.theme === "light"
+        ? "dark"
+        : "light";
+  }
 });

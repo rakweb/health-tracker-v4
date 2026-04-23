@@ -1,4 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ JavaScript is running");
-  alert("JavaScript loaded");
+  const btn = document.getElementById("btnAdd");
+
+  btn.addEventListener("click", () => {
+    console.log("✅ Add button clicked");
+    alert("Button works");
+  });
 });

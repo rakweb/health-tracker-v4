@@ -1,54 +1,33 @@
 // =====================================================
-// Health Tracker — Working Baseline
+// Health Tracker — Stable app.js
 // =====================================================
 (() => {
+  /** -----------------------------
+   * Internal state
+   * ----------------------------- */
   let entries = [];
   let chart = null;
 
+  /** -----------------------------
+   * Bootstrap
+   * ----------------------------- */
+  document.addEventListener("DOMContentLoaded", init);
 
+  function init() {
+    console.log("✅ DOMContentLoaded");
 
+    initTheme();
+    initChart();
+    wireButtons();
+    refreshUI();
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ DOMContentLoaded reached");
+    console.log("✅ App initialized");
+  }
 
-  // --- existing working bindings ---
-  btnTheme.addEventListener("click", toggleTheme);
-  btnAdd.addEventListener("click", addEntry);
-  btnRefresh.addEventListener("click", refreshUI);
-
-  console.log("✅ Passed Add Entry / Theme wiring");
-
-  // --- NEW wiring: remaining toolbar buttons ---
-  const buttonMap = {
-    btnFields: "Select Fields",
-    btnThresholds: "Thresholds",
-    btnSaveCSV: "Save CSV",
-    btnSavePDF: "Save PDF",
-    btnImportCSV: "Import CSV",
-    btnOptions: "Options"
-  };
-
-  Object.entries(buttonMap).forEach(([id, label]) => {
-    const el = document.getElementById(id);
-    if (!el) {
-      console.warn(`⚠️ ${id} not found`);
-      return;
-    }
-    el.addEventListener("click", () => {
-      console.log(`✅ ${label} clicked`);
-    });
-  });
-
-  console.log("✅ All toolbar buttons wired");
-});
-  
-  
-  
-
-  // -------------------------
-  // Theme
-  // -------------------------
-  function restoreTheme() {
+  /** -----------------------------
+   * Theme
+   * ----------------------------- */
+  function initTheme() {
     const saved = localStorage.getItem("theme") || "dark";
     document.documentElement.dataset.theme = saved;
   }
@@ -59,15 +38,46 @@ document.addEventListener("DOMContentLoaded", () => {
     document.documentElement.dataset.theme = next;
     localStorage.setItem("theme", next);
   }
-  
-  
-  console.log("✅ Passed Add Entry / Theme wiring");
-  
-  
 
-  // -------------------------
-  // CRUD (in memory baseline)
-  // -------------------------
+  /** -----------------------------
+   * Button wiring
+   * ----------------------------- */
+  function wireButtons() {
+    bind("btnTheme", toggleTheme);
+    bind("btnAdd", addEntry);
+    bind("btnRefresh", refreshUI);
+
+    // Toolbar buttons (stubbed, verified)
+    bind("btnFields", () => log("Select Fields"));
+    bind("btnThresholds", () => log("Thresholds"));
+    bind("btnSaveCSV", () => log("Save CSV"));
+    bind("btnSavePDF", () => log("Save PDF"));
+    bind("btnOptions", () => log("Options"));
+
+    bind("btnImportCSV", () => {
+      log("Import CSV");
+      document.getElementById("importFile")?.click();
+    });
+
+    console.log("✅ All buttons wired");
+  }
+
+  function bind(id, handler) {
+    const el = document.getElementById(id);
+    if (!el) {
+      console.warn(`⚠️ Element not found: ${id}`);
+      return;
+    }
+    el.addEventListener("click", handler);
+  }
+
+  function log(name) {
+    console.log(`✅ ${name} clicked`);
+  }
+
+  /** -----------------------------
+   * CRUD (in‑memory baseline)
+   * ----------------------------- */
   function addEntry() {
     entries.push({
       date: new Date().toISOString().slice(0, 10),
@@ -82,33 +92,63 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderTable() {
-    tableBody.innerHTML = "";
-    entries.forEach(e => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${e.date}</td><td>${e.glucose}</td>`;
-      tableBody.appendChild(tr);
+    const body = document.getElementById("tableBody");
+    if (!body) return;
+
+    body.innerHTML = "";
+    entries.forEach(entry => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${entry.date}</td>
+        <td>${entry.glucose}</td>
+      `;
+      body.appendChild(row);
     });
   }
 
-  // -------------------------
-  // Chart
-  // -------------------------
+  /** -----------------------------
+   * Chart
+   * ----------------------------- */
   function initChart() {
-    chart = new Chart(metricsChart, {
+    const canvas = document.getElementById("metricsChart");
+    if (!canvas) {
+      console.error("❌ metricsChart canvas not found");
+      return;
+    }
+
+    chart = new Chart(canvas, {
       type: "line",
       data: {
         labels: [],
-        datasets: [{
-          label: "Glucose",
-          data: [],
-          borderColor: "#4ba3ff",
-          tension: 0.3
-        }]
+        datasets: [
+          {
+            label: "Glucose",
+            data: [],
+            borderColor: "#4ba3ff",
+            backgroundColor: "rgba(75,163,255,0.15)",
+            tension: 0.3
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true }
+        },
+        scales: {
+          x: { title: { display: true, text: "Date" } },
+          y: { title: { display: true, text: "mg/dL" } }
+        }
       }
     });
+
+    console.log("✅ Chart initialized");
   }
 
   function updateChart() {
+    if (!chart) return;
+
     chart.data.labels = entries.map(e => e.date);
     chart.data.datasets[0].data = entries.map(e => e.glucose);
     chart.update();

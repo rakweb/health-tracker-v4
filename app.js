@@ -1,9 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
-  let entries = [];
-  let chart;
-
-  btnAdd.onclick = () => {
-    entries.pus// =====================================================
+// =====================================================
 // Health Tracker v21 — Working Baseline
 // =====================================================
 (() => {
@@ -23,26 +18,10 @@ document.addEventListener("DOMContentLoaded", () => {
     initChart();
     refreshUI();
   }
-
-  // -------------------------
-  // Theme
-  // -------------------------
-  function restoreTheme() {
-    const saved = localStorage.getItem("theme") || "dark";
-    document.documentElement.dataset.theme = saved;
-  }
-
-  function toggleTheme() {
-    const current = document.documentElement.dataset.theme;
-    const next = current === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem("theme", next);
-  }
- 
-
- 
   
-  // ===============================
+  
+  
+   // ===============================
 // Wire remaining toolbar buttons
 // ===============================
 const handlers = {
@@ -62,10 +41,24 @@ Object.entries(handlers).forEach(([id, fn]) => {
   const el = document.getElementById(id);
   if (el) el.addEventListener("click", fn);
 });
-``
   
   
   
+
+  // -------------------------
+  // Theme
+  // -------------------------
+  function restoreTheme() {
+    const saved = localStorage.getItem("theme") || "dark";
+    document.documentElement.dataset.theme = saved;
+  }
+
+  function toggleTheme() {
+    const current = document.documentElement.dataset.theme;
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem("theme", next);
+  }
 
   // -------------------------
   // CRUD (in memory baseline)
@@ -115,46 +108,4 @@ Object.entries(handlers).forEach(([id, fn]) => {
     chart.data.datasets[0].data = entries.map(e => e.glucose);
     chart.update();
   }
-})();h({
-      date: new Date().toISOString().slice(0, 10),
-      glucose: Math.floor(70 + Math.random() * 80)
-    });
-    render();
-  };
-
-  btnRefresh.onclick = render;
-  btnTheme.onclick = toggleTheme;
-
-  initChart();
-  render();
-
-  function render() {
-    tableBody.innerHTML = "";
-    entries.forEach(e => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${e.date}</td><td>${e.glucose}</td>`;
-      tableBody.appendChild(tr);
-    });
-
-    chart.data.labels = entries.map(e => e.date);
-    chart.data.datasets[0].data = entries.map(e => e.glucose);
-    chart.update();
-  }
-
-  function initChart() {
-    chart = new Chart(metricsChart, {
-      type: "line",
-      data: {
-        labels: [],
-        datasets: [{ label: "Glucose", data: [] }]
-      }
-    });
-  }
-
-  function toggleTheme() {
-    document.documentElement.dataset.theme =
-      document.documentElement.dataset.theme === "light"
-        ? "dark"
-        : "light";
-  }
-});
+})();

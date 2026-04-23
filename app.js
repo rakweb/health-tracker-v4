@@ -1,9 +1,13 @@
 // =====================================================
-// Health Tracker v21 — Working Baseline
+// Health Tracker — Working Baseline
 // =====================================================
 (() => {
   let entries = [];
   let chart = null;
+
+
+console.log("✅ DOMContentLoaded reached");
+
 
   document.addEventListener("DOMContentLoaded", init);
 
@@ -19,11 +23,6 @@
     refreshUI();
   }
   
-  
-  
-   // ===============================
-// Wire remaining toolbar buttons
-// ===============================
 const handlers = {
   btnRefresh: refreshUI,
   btnFields: () => console.log("Select Fields clicked"),
@@ -59,6 +58,11 @@ Object.entries(handlers).forEach(([id, fn]) => {
     document.documentElement.dataset.theme = next;
     localStorage.setItem("theme", next);
   }
+  
+  
+  console.log("✅ Passed Add Entry / Theme wiring");
+  
+  
 
   // -------------------------
   // CRUD (in memory baseline)

@@ -1,55 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
-  <title>Health Tracker</title>
+  <title>Health Tracker v4</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#0b1220" />
 
   <!-- PWA -->
-  ./manifest.webmanifest
-  ./icons/icon-192.png
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
 
-  <!-- Chart.js (MUST be script tag) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js   :root {
-      --bg: #0b1220;
-      --text: #e6eefc;
-      --btn: #1a2842;
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root {
+      --bg:#0b1220;
+      --text:#e6eefc;
+      --btn:#1a2842;
     }
     [data-theme="light"] {
-      --bg: #f6f8fb;
-      --text: #0b1220;
-      --btn: #e0e7ff;
+      --bg:#f6f8fb;
+      --text:#0b1220;
+      --btn:#e0e7ff;
     }
     body {
-      margin: 0;
-      padding: 16px;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, sans-serif;
+      margin:0;
+      padding:16px;
+      font-family:system-ui, sans-serif;
+      background:var(--bg);
+      color:var(--text);
     }
     button {
-      background: var(--btn);
-      color: var(--text);
-      border: none;
-      padding: 8px 12px;
-      margin-right: 8px;
-      cursor: pointer;
+      background:var(--btn);
+      color:var(--text);
+      border:none;
+      padding:8px 12px;
+      cursor:pointer;
+      margin-right:8px;
     }
     table {
-      width: 100%;
-      margin-top: 12px;
-      border-collapse: collapse;
+      width:100%;
+      border-collapse:collapse;
+      margin-top:12px;
     }
-    td, th {
-      border-bottom: 1px solid #444;
-      padding: 6px;
+    th, td {
+      border-bottom:1px solid #444;
+      padding:6px;
+      text-align:left;
     }
   </style>
 </head>
 
 <body>
-  <h1>Health Tracker</h1>
+  <h1>Health Tracker v4</h1>
 
   <div>
     <button id="btnTheme">Toggle Theme</button>
@@ -66,7 +70,7 @@
 
   <canvas id="metricsChart" height="120"></canvas>
 
-  <!-- app.js MUST be a script tag -->
-  </app.js</script>
+  <!-- app.js MUST be last -->
+  <script src="./app.js"></script>
 </body>
 </html>

@@ -1,8 +1,21 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("btnAdd");
+  console.log("Chart =", window.Chart);
 
-  btn.addEventListener("click", () => {
-    console.log("✅ Add button clicked");
-    alert("Button works");
+  if (!window.Chart) {
+    alert("❌ Chart.js not loaded");
+    return;
+  }
+
+  new Chart(document.getElementById("metricsChart"), {
+    type: "line",
+    data: {
+      labels: ["A", "B", "C"],
+      datasets: [{
+        label: "Test",
+        data: [1, 2, 3]
+      }]
+    }
   });
+
+  alert("✅ Chart rendered");
 });

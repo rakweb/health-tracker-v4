@@ -101,6 +101,73 @@ input[type="date"] {
     <button id="btnAdd">Add Entry</button>
     <button id="btnRefresh">Refresh</button>
   </div>
+  
+  <div class="card" id="topControls">
+
+  <!-- Row 1: Filters & View Controls -->
+  <div class="card-row">
+    <div>
+      <label for="filterStart">From Date</label>
+      <input type="date" id="filterStart">
+    </div>
+
+    <div>
+      <label for="filterEnd">To Date</label>
+      <input type="date" id="filterEnd">
+    </div>
+
+    <div>
+      <label for="chartMetrics">Chart Metrics</label>
+      <select id="chartMetrics">
+        <option value="glucose">Glucose</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="axisMode">Axis Mode</label>
+      <select id="axisMode">
+        <option value="single">Single Axis</option>
+        <option value="multi">Per Metric</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="toggleChart">Show Metric Chart</label>
+      <select id="toggleChart">
+        <option value="on">On</option>
+        <option value="off">Off</option>
+      </select>
+    </div>
+
+    <div>
+      <label for="viewMode">View</label>
+      <select id="viewMode">
+        <option value="both">Table + Chart</option>
+        <option value="table">Table Only</option>
+        <option value="chart">Chart Only</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Row 2: Data Actions -->
+  <div class="card-row center">
+    <button id="btnRefresh">Refresh</button>
+    <button id="btnFields">Select Fields</button>
+    <button id="btnThresholds">Thresholds</button>
+    <button id="btnSaveCSV">Save CSV</button>
+    <button id="btnSavePDF">Save PDF</button>
+    <button id="btnImportCSV">Import CSV</button>
+    <input type="file" id="importFile" accept=".csv" hidden>
+  </div>
+
+  <!-- Row 3: Primary Actions -->
+  <div class="card-row center">
+    <button id="btnAdd">Add Entry</button>
+    <button id="btnOptions">Options</button>
+    <button id="btnTheme">Toggle Theme</button>
+  </div>
+
+</div>
 
   <table>
     <thead>

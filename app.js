@@ -6,39 +6,40 @@
   let chart = null;
 
 
-console.log("✅ DOMContentLoaded reached");
 
 
-  document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("✅ DOMContentLoaded reached");
 
-  function init() {
-    console.log("✅ app.js loaded");
+  // --- existing working bindings ---
+  btnTheme.addEventListener("click", toggleTheme);
+  btnAdd.addEventListener("click", addEntry);
+  btnRefresh.addEventListener("click", refreshUI);
 
-    btnTheme.addEventListener("click", toggleTheme);
-    btnAdd.addEventListener("click", addEntry);
-    btnRefresh.addEventListener("click", refreshUI);
+  console.log("✅ Passed Add Entry / Theme wiring");
 
-    restoreTheme();
-    initChart();
-    refreshUI();
-  }
-  
-const handlers = {
-  btnRefresh: refreshUI,
-  btnFields: () => console.log("Select Fields clicked"),
-  btnThresholds: () => console.log("Thresholds clicked"),
-  btnSaveCSV: () => console.log("Save CSV clicked"),
-  btnSavePDF: () => console.log("Save PDF clicked"),
-  btnImportCSV: () => {
-    console.log("Import CSV clicked");
-    document.getElementById("importFile")?.click();
-  },
-  btnOptions: () => console.log("Options clicked")
-};
+  // --- NEW wiring: remaining toolbar buttons ---
+  const buttonMap = {
+    btnFields: "Select Fields",
+    btnThresholds: "Thresholds",
+    btnSaveCSV: "Save CSV",
+    btnSavePDF: "Save PDF",
+    btnImportCSV: "Import CSV",
+    btnOptions: "Options"
+  };
 
-Object.entries(handlers).forEach(([id, fn]) => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener("click", fn);
+  Object.entries(buttonMap).forEach(([id, label]) => {
+    const el = document.getElementById(id);
+    if (!el) {
+      console.warn(`⚠️ ${id} not found`);
+      return;
+    }
+    el.addEventListener("click", () => {
+      console.log(`✅ ${label} clicked`);
+    });
+  });
+
+  console.log("✅ All toolbar buttons wired");
 });
   
   
